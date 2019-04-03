@@ -1,0 +1,36 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{dictManipulation}[2019/04/02]
+
+\makeatletter
+\newcommand{\dictMake}[1]{%
+  \arrayMake{\dictKeys{#1}}%
+}
+\newcommand{\dictHasKey}[2]{%
+  \dictContains{\dictKeys{#1}}{#2}%
+}
+\newcommand{\dictKeys}[1]{%
+  #1:keys%
+}
+\newcommand{\dictSet}[3]{%
+  \arrayPushNoDuplicate{\dictKeys{#1}}{#2}%
+  \expandafter\edef\csname #1.#2\endcsname{#3}%
+}
+\newcommand{\dictGet}[2]{%
+  \csname #1.#2\endcsname%
+}
+\newcommand{\dictUnset}[2]{%
+  \arrayRemove{#1}{#2}%
+  \expandafter\def\csname #1.#2\endcsname\undefined%
+}
+% \newcommand{\dictContains}[2]{%
+  
+% }
+\newcommand{\dictForeach}[4][k]{
+  \arrayForeach[nthKeyInKeysArray]{#1}{\dictKeys{#3}}{%
+    \expandafter\edef\csname#2\endcsname{\dictGet{#3}{\csname #1\endcsname}}%
+    #4%
+  }%
+}
+\makeatother
+
+\endinput
