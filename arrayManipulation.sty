@@ -1,0 +1,293 @@
+%%
+%% This is file `arrayManipulation.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% arrayManipulation.dtx  (with options: `package')
+%% Preamble content
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{arrayManipulation}[2019/04/02]
+
+
+\makeatletter
+
+
+\newcommand{\arrayMake}[2][local]{%
+  \arrayInternals@ifLocal#1%
+  \expandafter\newcount\csname \arrayLen@name{#2}\endcsname%
+  \else%
+  \global\expandafter\newcount\csname \arrayLen@name{#2}\endcsname%
+  \fi%
+  \arrayLen@unsafe@counter{#2} 0\relax%
+}
+\newcommand{\arrayLen@name}[1]{%
+  #1.length%
+}
+\newcommand{\arrayLen@unsafe@counter}[1]{%
+  \csname \arrayLen@name{#1}\endcsname%
+}
+\newcommand{\arrayLen@unsafe}[1]{%
+  \the\arrayLen@unsafe@counter{#1}%
+}
+
+\newcommand{\arrayLen}[1]{%
+  \arrayEnsureDefined{#1}%
+  \arrayLen@unsafe{#1}%
+}
+\newcommand{\arrayPush}[3][local]{
+  \arrayEnsureDefined{#2}%
+  \edef\tmp{#2:\arrayLen@unsafe{#2}}%
+  \arrayInternals@ifLocal#1
+  \expandafter\edef\csname\tmp\endcsname{#3}%
+  \expandafter\advance\arrayLen@unsafe@counter{#2} 1\relax%
+  \else%
+  \expandafter\xdef\csname\tmp\endcsname{#3}%
+  \global\expandafter\advance\arrayLen@unsafe@counter{#2} 1\relax%
+  \fi%
+}
+
+\newcommand{\arrayGet}[2]{%
+  \arrayEnsureDefined{#1}%
+  \arrayEnsureIndexable{#1}{#2}%
+  \csname#1:#2\endcsname%
+}
+\newcommand{\arrayGet@unsafe}[2]{%
+  \csname#1:#2\endcsname%
+}
+\newcommand{\arraySet}[3]{%
+  \arrayEnsureDefined{#1}%
+  \arrayEnsureIndexable{#1}{#2}%
+  \arraySet@unsafe{#1}{#2}{#3}%
+}
+\newcommand{\arraySet@unsafe}[3]{%
+  \expandafter\edef\csname#1:#2\endcsname{#3}%
+}
+\newcommand{\arraySet@unsafe@global}[3]{%
+  \expandafter\xdef\csname#1:#2\endcsname{#3}%
+}
+\newcommand{\arrayPop}[2][local]{%
+  \arrayEnsureDefined{#2}%
+  \ifnum\arrayLen{#2}=0\PackageError{array}{Cannot pop #2: it is empty}{}\fi%
+  \edef\arrayPop@tmp{#2:\arrayLen@unsafe{#2}}%
+  \arrayInternals@ifLocal{#1}%
+  \expandafter\advance\arrayLen@unsafe@counter{#2} -1\relax%
+  \expandafter\let\csname\arrayPop@tmp\endcsname\undefined%
+  \else%
+  \global\expandafter\advance\arrayLen@unsafe@counter{#2} -1\relax%
+  \expandafter\gdef\csname\arrayPop@tmp\endcsname\undefined%
+  \fi%
+}
+
+\newcommand{\arrayEmpty}[2][local]{%
+  \ifnum\arrayLen{#2}>0%
+  \loop%
+  \arrayPop[#1]{#2}%
+  \expandafter\ifnum\arrayLen{#2}>0%
+  \repeat%
+  \fi%
+}
+
+\newcount\arrayFindResult
+\edef\arrayFind@cst@one{1}
+\newcommand{\arrayFind}[4]{%
+  \arrayEnsureDefined{#1}%
+  \begingroup%
+  \newcount\arrayFind@tmp@i%
+  \newcount\arrayFind@tmp@result%
+  \arrayFind@tmp@i \arrayLen{#1}\relax%
+  \arrayFind@tmp@result -1\relax%
+  \advance\arrayFind@tmp@i -1\relax%
+  \ifnum\arrayFind@tmp@i>-1%
+  \loop%
+  \edef\arrayFind@tmp@val{\arrayGet@unsafe{#1}{\the\arrayFind@tmp@i}}%
+  \expandafter\edef\csname#2\endcsname{\arrayFind@tmp@i}%
+  \expandafter\edef\csname#3\endcsname{\arrayFind@tmp@val}%
+  \edef\arrayFind@evaluated{#4}%
+  \ifx\arrayFind@evaluated\arrayFind@cst@one\arrayFind@tmp@result=\arrayFind@tmp@i\fi%
+  \advance\arrayFind@tmp@i -1\relax%
+  \ifnum\arrayFind@tmp@i>-1%
+  \repeat%
+  \fi%
+  \global\arrayFindResult \arrayFind@tmp@result%
+  \endgroup%
+}
+
+\newcount\arrayIndexOfResult
+\newcommand{\arrayIndexOfC}[2]{%
+  \edef\arrayIndexOfC@tmp@givenVal{#2}
+  \arrayFind{#1}{key}{value}{%
+    \ifx\value\arrayIndexOfC@tmp@givenVal1\else0\fi%
+  }%
+  \arrayIndexOfResult \arrayFindResult\relax%
+}
+
+\newcommand{\arrayIndexOf}[2]{%
+  \arrayIndexOfC{1}{2}%
+  \the\arrayIndexOfResult%
+}
+
+\newcommand{\arrayPushNoDuplicate}[2]{%
+  \arrayEnsureDefined{#1}%
+  \arrayIndexOfC{#1}{#2}%
+  \ifnum\arrayIndexOfResult=-1%
+  \arrayPush{#1}{#2}%
+  \fi%
+}
+
+\newcommand{\arrayRemove}[2]{%
+  \arrayEnsureDefined{#1}%
+  \edef\arrayRemoveNotFound{-1}%
+  \edef\arrayRemoveResult{\arrayIndexOf{#1}{#2}}%
+  \ifx\arrayRemoveNotFound\arrayRemoveResult\else%
+  \arrayRemoveAt{#1}{\arrayRemoveResult}%
+  \fi%
+}
+
+\newcommand{\arrayContains}[2]{%^^A
+  \arrayEnsureDefined{#1}%^^A
+  \begingroup%^^A
+  \edef\arrayContainsNotFound{-1}
+  \edef\result{\arrayIndexOf{#1}{#2}}%^^A
+  \ifx\arrayContainsNotFound\result0\else1\fi%^^A
+  \endgroup%^^A
+}
+
+\newcount\arrayRemoveAt@tmp@i
+\newcommand{\arrayRemoveAt}[2]{%
+  \arrayEnsureDefined{#1}%
+  \arrayEnsureIndexable{#1}{#2}%
+  \arrayRemoveAt@tmp@i #2\relax%
+  \loop%
+  \edef\arrayRemoveAtTmp{\the\arrayRemoveAt@tmp@i}%
+  \advance\arrayRemoveAt@tmp@i 1\relax%
+  \arraySet{#1}{\arrayRemoveAtTmp}{\arrayGet@unsafe{#1}{\the\arrayRemoveAt@tmp@i}}%
+  \ifnum\arrayRemoveAt@tmp@i<\arrayLen{#1}%
+  \repeat%
+  \arrayPop{#1}%
+}
+\newcommand{\arrayMakeOrEmpty}[2][local]{%
+  \ifcsname\arrayLen@name{#2}\endcsname%
+  \arrayEmpty[#1]{#2}
+  \else%
+  \arrayMake[#1]{#2}%
+  \fi%
+}
+
+\newcount\arrayCopy@tmp@i
+\newcommand{\arrayCopy}[3][local]{%
+  \arrayMakeOrEmpty[#1]{#3}%
+  \arrayCopy@tmp@i 0\relax%
+  \loop%
+  \edef\arrayCopy@tmp{\arrayGet@unsafe{#2}{\the\arrayCopy@tmp@i}}%
+  \arrayPush[#1]{#3}{\arrayCopy@tmp}%
+  \advance\arrayCopy@tmp@i 1\relax%
+  \ifnum\arrayCopy@tmp@i<\arrayLen{#2}%
+  \repeat%
+}
+
+\newcommand{\arrayForeach}[4][k]{%
+  \arrayForeachSkipping[#1]{#2}{#3}{#4}{0}%
+}
+
+
+\newcommand{\arrayForeachSkipping}[5][k]{%
+  \expandafter\newcount\csname #1count\endcsname%
+  \csname #1count\endcsname #5\relax
+  \ifnum\arrayLen{#3}>#5%
+  % \csname #1\endcsname 0\relax%
+  \loop%
+  % sets up the key var
+  \expandafter\edef\csname #1\endcsname{\expandafter\the\csname #1count\endcsname}%
+  % sets up the value var
+  \expandafter\edef\csname #2\endcsname{\arrayGet@unsafe{#3}{\csname #1\endcsname}}%
+  #4%
+  \advance\csname #1count\endcsname 1\relax
+  \expandafter\ifnum\csname #1count\endcsname<\arrayLen{#3}%
+  \repeat%
+  \fi%
+}
+\edef\arrayFold@noIntialValueConst{no!initial!value}%
+
+\newcommand{\arrayFold}[6][\arrayFold@noIntialValueConst]{%
+  \begingroup%
+  \edef\arrayFold@tmp@n@skipping{0}%
+  \edef\arrayFold@tmp@initVal{#1}%
+  % if no initial value, take 0nth of #2
+  \ifx\arrayFold@tmp@initVal\arrayFold@noIntialValueConst%
+  \ifnum\arrayLen{#2}=0\PackageError{arrayManipulation}{Cannot fold an empty array (#2) without initial value}{}\fi%
+  \edef\arrayFold@tmp@n@skipping{1}%
+  \edef\arrayFold@tmp@initVal{\arrayGet@unsafe{#2}{0}}%
+  \else%
+  \fi%
+  % now we have an initial value (or a --thrown-- error)
+
+  % arrayForeach[#3]\{#5\}\{#2\}\\
+  %^^A \arrayForeach[keyVar]{valueVar}{arrayName}{body}
+  \arrayForeachSkipping[#3]{#5}{#2}{%
+    % Turning value $\arrayFold@tmp@initVal$ into%
+    \expandafter\edef\csname #4\endcsname{\arrayFold@tmp@initVal}%
+    \edef\arrayFold@tmp@initVal{#6}%
+    % $\arrayFold@tmp@initVal$, at key $\csname #3\endcsname$, with value $\csname #5 \endcsname$\\
+  }{\arrayFold@tmp@n@skipping}%
+  \arrayFold@tmp@initVal%
+  \endgroup%
+}
+
+\newcount\arrayMakeRepeat@tmp@i
+\newcommand{\arrayMakeRepeat}[3]{%
+  \ifcsname\arrayLen@name{#1}\endcsname\else%
+  \arrayMake{#1}%
+  \fi%
+  \arrayMakeRepeat@tmp@i 0\relax%
+  \loop%
+  \arrayPush{#1}{#2}%
+  \advance\arrayMakeRepeat@tmp@i 1\relax%
+  \ifnum\arrayMakeRepeat@tmp@i<#3%
+  \repeat%
+}
+
+\newcommand{\arrayMakeFun}[4]{%
+  \arrayMakeRepeat{#1}{0}{#4}%
+  \arrayMap[#2]{#1}{#1}{val#2}{#3}%
+}
+\newcommand{\arrayMap}[5][key]{%
+  \begingroup%
+  \arrayMake{localArray}%
+  \newcount\mapCounter%
+  \loop%
+  \expandafter\edef\csname #4\endcsname{\arrayGet@unsafe{#2}{\the\mapCounter}}%
+  \edef\arrayMap@tmp@fun{#5}%
+  \expandafter\edef\csname#1\endcsname{\the\mapCounter}%
+  \arrayPush{localArray}{\arrayMap@tmp@fun}%
+  \advance\mapCounter 1\relax%
+  \ifnum\mapCounter<\arrayLen@unsafe@counter{#2}%
+  \repeat%
+  \arrayCopy[global]{localArray}{arrayTemporaryCache}%
+  \endgroup%
+  \arrayCopy{arrayTemporaryCache}{#2}%
+}
+
+\newcommand{\arrayEnsureDefined}[1]{%
+  \ifcsname\arrayLen@name{#1}\endcsname\else%
+  \PackageError{arrayManipulationManipulation}{#1 is not defined}{}%
+  \fi%
+}
+
+\newcommand{\arrayEnsureIndexable}[2]{%
+  \ifnum#2<\arrayLen{#1}\else\PackageError{arrayManipulationManipulation}{Cannot access #1[#2]: out of bounds (#1.len=\arrayLen{#1})}{}\fi%
+  \ifnum#2<0\PackageError{arrayManipulationManipulation}{Cannot access #1[#2]: out of bounds (#1.len=\arrayLen{#1})}{}\fi%
+}
+\edef\arrayInternals@localConstant{local}%
+\newcommand\arrayInternals@ifLocal[1]{%
+  \edef\arrayInternals@ifLocal@tmp{#1}%
+  \ifx\arrayInternals@ifLocal@tmp\arrayInternals@localConstant%
+}
+
+
+
+\makeatother
+
+\endinput
+%%
+%% End of file `arrayManipulation.sty'.
